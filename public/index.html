@@ -1,0 +1,2567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Online Code Editor</title>
+  <!-- Preload CodeMirror CSS -->
+  <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.css" as="style">
+  <!-- CodeMirror CSS -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.css">
+  <!-- FontAwesome CSS for icons -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/theme/dracula.min.css">
+  
+  <style>
+    /* Overall page styles */
+    body, html {
+      margin: 0;
+      padding: 0;
+      font-family: 'Courier New', monospace;
+      font-weight: bold;
+      background: #f7f7f7;
+      height: 100%;
+      overflow: hidden;
+      
+    }
+
+    body {
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  
+}
+
+    /* Dark mode styles */
+    .dark-mode {
+      background-color: #262833;
+      color: #ddd;
+    }
+    /* Force terminal and CodeMirror backgrounds to pure black when dark mode is active */
+.dark-mode #terminal {
+  background: #1D1D1D;   /*not effecting here,JS on dark mode effecting is there */
+  color: #fff;
+}
+.dark-mode .CodeMirror {
+  background: #1D1D1D !important;
+  color: #fff !important;
+}
+
+
+
+/* Remove hover scaling for the dark mode toggle icon by default */
+#darkmode-toggle:hover {
+  transform: none;
+}
+
+/* Apply hover scaling only when dark mode is active */
+body.dark-mode #darkmode-toggle:hover {
+  transform: scale(1.5);
+}
+
+
+    /* Top Dock Styles */
+#top-dock {
+  position: fixed;
+  top: 0;
+  left: 50px; /* Leave space for the left dock */
+  right: 0;
+  height: 50px;
+  display: flex;
+  animation: openTopDock 2s ease-out forwards;
+  transform-origin: left center; /* Adjust as needed for the pivot */
+  align-items: center;
+  padding: 0 10px;
+  padding-left: 60px; /* Prevent icons from hiding */
+  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.3),
+              -5px -5px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  gap: 20px;
+  border: 2px solid transparent;
+ 
+  border-top-left-radius: 50px;
+  border-bottom-left-radius: 50px;
+  border-bottom-right-radius: 50px;
+}
+
+
+
+/* Left Dock Styles */
+#left-dock {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 50px;
+  height: 100vh;
+  animation: openLeftDock 2s ease-out forwards;
+  transform-origin: top center; /* Adjust as needed for the pivot */
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding-top: 60px; /* Prevent icons from hiding */
+  box-shadow: 5px 5px 10px rgba(0, 0, 0, 0.3),
+              -5px -5px 10px rgba(0, 0, 0, 0.1);
+  z-index: 1000;
+  gap: 20px;
+  border: 2px solid transparent;
+
+  border-top-right-radius: 100px;
+  border-bottom-left-radius: 20px;
+  border-bottom-right-radius: 50px;
+}
+
+
+/* Hidden state */
+#top-dock.hidden {
+  transform: translateY(-100%);
+}
+#left-dock.hidden {
+  transform: translateX(-100%);
+}
+
+
+@keyframes openTopDock {
+  0% {
+    transform: translateY(-120px) rotate(45deg);
+  }
+  100% {
+    transform: translateX(0) rotate(0deg);
+  }
+}
+
+
+@keyframes openLeftDock {
+  0% {
+    transform: translateY(0px) rotate(-45deg);
+  }
+  100% {
+    transform: translateY(0) rotate(0deg);
+  }
+}
+
+
+
+
+    .dock-icon {
+      font-size: 20px;
+      margin: 10px 0;
+      cursor: pointer;
+      background: none;
+      border: none;
+      transition: transform 0.2s ease-in-out;
+    }
+
+
+    .dock-icon:hover {
+      transform: scale(1.3);
+      animation: zoomDown 0.8s ease;
+    }
+
+
+    @keyframes zoomDown {
+  0% {
+    transform: perspective(500px) scale(1) translateY(0);
+  }
+  50% {
+    transform: perspective(500px) scale(1.5) translateY(5px);
+  }
+  100% {
+    transform: perspective(500px) scale(1.3) translateY(0);
+  }
+}
+
+/*active programming languge animnation - left side hide and come*/
+.dock-icon.active {
+    transform: scale(1.5) translateX(0px);
+    animation: pulse 24s infinite;
+  }
+  
+  @keyframes pulse {
+    0% { transform: scale(1) translateX(0px); }
+    20% { transform: scale(0.9) translateX(0px); }
+    50% { transform: scale(1.1) translateX(0px); }
+    50% { opacity: 0; }
+    50% { transform: scale(1.1) translateX(0px); }
+    80% { transform: scale(0.9) translateX(0px); }
+    100% { transform: scale(1) translateX(0px); }
+  }
+
+
+
+
+
+    /* Active state for zoom-scroll button _ TOP DOCK LAST BUTTON*/
+    #zoom-scroll.active {
+      color: red;
+    }
+
+/*Docks hidden show option*/
+/* --- Existing styles remain unchanged --- */
+
+/* Additional styles for auto-hiding docks */
+#top-dock, #left-dock {
+  transition: transform 0.3s ease;
+}
+
+/* Slide top dock out of view */
+#top-dock.hidden {
+  transform: translateY(-100%);
+}
+
+/* Slide left dock out of view */
+#left-dock.hidden {
+  transform: translateX(-100%);
+}
+
+/* Animate the margins of the code pane (split container) */
+#split-container {
+  margin-top: 50px;
+  margin-left: 50px;
+  transition: margin 0.3s ease;
+}
+
+/* Toggle button active state: scale up when auto-hide is enabled */
+#dock-toggle {
+  transition: transform 0.3s ease;
+}
+
+#dock-toggle.active {
+  transform: scale(1.7);
+}
+
+/**/
+
+    /* Adjust the split container */
+    #split-container {
+      margin-top: 50px; /* top dock height */
+      margin-left: 50px; /* left dock width */
+      width: calc(100% - 50px);
+      height: calc(100vh - 50px);
+      display: flex;
+      
+    }
+   
+    /* Editor Pane */
+    #pane-editor {
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      background: none;
+      height: 100%;
+      margin-top: 5px;
+      
+      
+      
+      
+    }
+    /* Editor container (initially hidden to prevent flash of unstyled content) */
+    #editor-container {
+      flex: 1;
+      border: 1px solid transparent;
+      display: flex;
+      flex-direction: column;
+      overflow: hidden;
+      visibility: hidden;
+      
+
+    }
+    /* Run button */
+    #runBtn {
+      padding: 10px 20px;
+      font-size: 16px;
+      background: transparent;
+      color: transparent;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      width: 100%;
+      margin-left: 3px;
+    }
+
+    #runBtn:hover {
+      background: transparent;
+      transform: scale(1.2);
+    }
+    /* Terminal Pane Scroll bar irited issue------------------------------------*/
+    #pane-terminal {
+  background: #fff;
+  overflow-y: auto;
+  /* Firefox: hide scrollbar */
+  scrollbar-width: none;
+  
+}
+
+/* Firefox: show thin scrollbar on hover */
+#pane-terminal:hover {
+  scrollbar-width: thin;
+}
+
+/* WebKit browsers (Chrome, Safari) - hide scrollbar by default */
+#pane-terminal::-webkit-scrollbar {
+  width: 0;
+  background: transparent;
+}
+
+/* WebKit browsers: show scrollbar when hovering */
+#pane-terminal:hover::-webkit-scrollbar {
+  width: 8px;
+}
+
+/* Style the scrollbar thumb for WebKit */
+#pane-terminal::-webkit-scrollbar-thumb {
+  background-color: #ccc;
+  border-radius: 4px;
+}
+
+/* Terminal Pane Scroll bar irited issue ENDED------------------------------------*/
+
+
+    /* Terminal styling */
+    #terminal {
+      width: 100%;
+      height: 100%;
+      padding: 10px;
+      border: 1px solid transparent;
+      background: #fff;
+      white-space: pre-wrap;
+      font-family: monospace;
+      cursor: text;
+    }
+    .inline-input {
+      display: inline;
+      outline: none;
+      border: none;
+      font-family: inherit;
+      font-size: inherit;
+      background: transparent;
+    }
+    /* Split.js gutter styling */
+    .gutter {
+      height: 100%;
+    }
+    .gutter.gutter-horizontal {
+      cursor: col-resize;
+    }
+    .gutter.gutter-vertical {
+      cursor: row-resize;
+    }
+    /* Make CodeMirror fill its container */
+    .CodeMirror {
+      flex: 1;
+      height: auto !important;
+      
+    }
+    :fullscreen #split-container,
+    :-webkit-full-screen #split-container {
+      margin: 0;
+      width: 100%;
+      height: 100%;
+    }
+    /* 
+      Styles for the indentation guide markers.
+    */
+   /* Light mode indent guides */
+.cm-indent-guides {
+  margin-right: 4px;
+  color: rgb(0, 0, 0);  /* Dark gray for light backgrounds */
+  user-select: none;
+}
+
+/* Dark mode indentation guides */
+.dark-mode .cm-indent-guides {
+  color: #c0c0c0;  /* Light gray for dark backgrounds */
+}
+
+    .cm-indent-guide {
+      display: inline-block;
+      width: 1em;
+      text-align: center;
+    }
+
+      /* Additional style to zoom the active language icon */
+  .dock-icon.active {
+    transform: scale(1.5);
+  }
+/*MEDIA -------------------------------------------------------------------------*/
+  @media screen and (max-width: 360px) {
+  /* Adjust body padding and layout */
+  body, html {
+    overflow: auto;
+  }
+
+  /* Make top and left docks smaller */
+  #top-dock {
+    height: 10vh;
+    left: -25vw;
+    justify-content: space-around;
+    padding: 0 5px;
+    background-color: transparent;
+  }
+
+  #left-dock {
+    width: 18vw;
+    padding-top: 75px;
+    background-color: transparent;
+  }
+
+  .dock-icon {
+    font-size: 20px;
+    margin: 5px 0;
+    margin-left: 0vw;
+  }
+
+  /* Adjust split container for better fit */
+  #split-container {
+    margin-top: 120px;
+    margin-left: 60px;
+    width: calc(100% - 40px);
+    height: calc(100vh - 40px);
+    flex-direction: column;
+    
+  }
+
+  /* Code editor and terminal adjustments */
+  #pane-editor, #pane-terminal {
+    height: 70%;
+  }
+
+  /* Adjust CodeMirror editor */
+  .CodeMirror {
+    font-size: 14px !important;
+  }
+
+  /* Adjust run button */
+  #runBtn {
+    width: 100%;
+    font-size: 14px;
+    padding: 8px;
+  }
+
+  /* Make terminal scrollable */
+  #terminal {
+    font-size: 14px;
+    overflow-y: auto;
+  }
+}
+/*Phone Media Ended-----------------------------------------------------*/
+
+/*highline coding active line*/
+/* Active line highlighting for CodeMirror */
+
+
+/* Light mode active line */
+.active-line-custom {
+  background-color: rgba(0, 0, 0, 0.15) !important; /* Light yellow with 25% opacity */
+}
+
+/* Dark mode active line */
+.dark-mode .active-line-custom {
+  background-color: rgba(255, 255, 255, 0.15) !important; /* White with 15% opacity */
+}
+
+
+
+/*hightlight ended*/
+
+/*coding number bar
+
+/* Light mode styles 
+.CodeMirror-linenumber {
+  color: rgba(0, 0, 0, 0.25);
+  padding: 0 5px;
+  background-color: #F6F6F6;
+}
+
+/* Dark mode styles 
+.dark-mode .CodeMirror-linenumber {
+  color: yellow;
+  background-color: #005020;
+}
+
+
+coding number bar ENDED */
+
+/*syntax colour in operator colour*/
+body.dark-mode .CodeMirror .cm-operator {
+  color: white !important;
+}
+body:not(.dark-mode) .CodeMirror .cm-operator {
+  color: black !important;
+}
+/*syntax colour in operator colour Ended*/
+
+/* Disable all transformations, animations, and scaling for the dock-toggle button */
+#dock-toggle {
+  transition: none !important;
+  animation: none !important;
+  transform: none !important;
+}
+
+#dock-toggle:hover,
+#dock-toggle:active,
+#dock-toggle:focus {
+  transform: none !important;
+  animation: none !important;
+  scale: 1 !important;
+}
+
+
+
+  </style>
+
+  <!-- CodeMirror clike mode for Java and C -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/clike/clike.min.js"></script>
+  <!-- CodeMirror mode for Python -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/python/python.min.js"></script>
+  <!-- CodeMirror active line addon -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/addon/selection/active-line.min.js"></script>
+</head>
+<body>
+  <!-- Left Dock with language icons as images -->
+<!-- Left Dock with Updated Language Icons -->
+<div id="left-dock">
+  <button class="dock-icon" id="python-btn" title="Python" 
+    data-color="https://img.icons8.com/?size=100&id=13441&format=png&color=000000" 
+    data-black="https://img.icons8.com/?size=100&id=12592&format=png&color=000000">
+    <img src="https://img.icons8.com/?size=100&id=13441&format=png&color=000000" alt="Python" style="width:32px; height:32px;">
+  </button>
+  <button class="dock-icon" id="java-btn" title="Java" 
+    data-color="https://img.icons8.com/?size=100&id=13679&format=png&color=000000" 
+    data-black="https://img.icons8.com/?size=100&id=38294&format=png&color=000000">
+    <img src="https://img.icons8.com/?size=100&id=13679&format=png&color=000000" alt="Java" style="width:34px; height:34px;">
+  </button>
+  <button class="dock-icon" id="c-btn" title="C" 
+    data-color="https://img.icons8.com/?size=100&id=40670&format=png&color=000000" 
+    data-black="https://img.icons8.com/?size=100&id=111021&format=png&color=000000">
+    <img src="https://img.icons8.com/?size=100&id=40670&format=png&color=000000" alt="C" style="width:32px; height:32px;">
+  </button>
+  <button class="dock-icon" id="cpp-btn" title="C++" 
+    data-color="https://img.icons8.com/?size=100&id=40669&format=png&color=000000" 
+    data-black="https://img.icons8.com/?size=100&id=55199&format=png&color=000000">
+    <img src="https://img.icons8.com/?size=100&id=40669&format=png&color=000000" alt="C++" style="width:32px; height:32px;">
+  </button>
+  <button class="dock-icon" id="javascript-btn" title="JavaScript" 
+    data-color="https://img.icons8.com/?size=100&id=108784&format=png&color=000000" 
+    data-black="https://img.icons8.com/?size=100&id=39854&format=png&color=000000">
+    <img src="https://img.icons8.com/?size=100&id=108784&format=png&color=000000" alt="JavaScript" style="width:36px; height:36px;">
+  </button>
+  <button class="dock-icon" id="php-btn" title="PHP" 
+    data-color="https://img.icons8.com/?size=100&id=GoJB3D7J95AQ&format=png&color=000000" 
+    data-black="https://img.icons8.com/?size=100&id=10232&format=png&color=000000">
+    <img src="https://img.icons8.com/?size=100&id=GoJB3D7J95AQ&format=png&color=000000" alt="PHP" style="width:38px; height:38px;">
+  </button>
+  <button class="dock-icon" id="perl-btn" title="Perl" 
+    data-color="https://img.icons8.com/?size=100&id=68be1Hn2qxpS&format=png&color=000000" 
+    data-black="https://img.icons8.com/?size=100&id=8-qcpLMM86WZ&format=png&color=000000">
+    <img src="https://img.icons8.com/?size=100&id=68be1Hn2qxpS&format=png&color=000000" alt="Perl" style="width:32px; height:32px;">
+  </button>
+</div>
+
+<!-- Top Dock with action icons as images -->
+<div id="top-dock">
+  
+    <!-- Docks Hidden Switch Button -->
+    <button class="dock-icon" id="dock-toggle" title="View Mode">
+      <img src="https://img.icons8.com/?size=100&id=qxnheTBF0af8&format=png&color=000000" alt="Enter Fullscreen" 
+      style="transition:none; animation:none; width:36px; height:36px;">
+    </button>
+    <button class="dock-icon" id="fullscreen-toggle" title="Fullscreen">
+      <img src="https://img.icons8.com/color/48/full-screen.png" alt="Fullscreen" style="width:30px; height:30px;">
+    </button>
+    <button class="dock-icon" id="viewmode-toggle" title="View Positions">
+      <img src="https://img.icons8.com/color/48/switch.png" alt="View Mode" style="width:30px; height:30px;">
+    </button>
+    <button class="dock-icon" id="theme-toggle" title="Themes">
+      <img src="https://img.icons8.com/color/48/color-palette.png" alt="Themes" style="width:30px; height:30px;">
+    </button>
+    <button class="dock-icon" id="darkmode-toggle" title="Dark/Light Mode">
+      <img src="https://img.icons8.com/color/48/sun.png"  style="width:40px; height:40px;">
+    </button>
+    <button class="dock-icon" id="syntax-toggle" title="Text Colors">
+      <img src="https://img.icons8.com/color/48/text-color.png" alt="Syntax Colors" style="width:36px; height:36px;">
+    </button>
+    <button class="dock-icon" id="write-btn" title="Pencil Mode">
+      <img src="https://img.icons8.com/?size=100&id=13370&format=png&color=000000" alt="Pencil Mode" style="width:38px; height:38px;">
+    </button>
+    <button class="dock-icon" id="eraser-btn" title="Erase Mode">
+      <img src="https://img.icons8.com/?size=100&id=12115&format=png&color=000000" alt="Erase Mode" style="width:32px; height:32px;">
+    </button>
+    <!-- Clear Drawing Button -->
+    <button class="dock-icon" id="clear-drawing-btn" title="Erase All">
+      <img src="https://img.icons8.com/?size=100&id=MDDxC85l3fzt&format=png&color=000000" alt="Erase All" style="width:32px; height:32px;">
+  </button>
+  <button class="dock-icon" id="bg-theme-toggle" title="Background Themes">
+    <img src="https://img.icons8.com/?size=100&id=v2fquAPizrkj&format=png&color=000000" alt="Background Theme" style="width:36px; height:36px;">
+  </button>
+  <!-- Pencil Color Picker Button -->
+  <button class="dock-icon" id="pencil-color-btn" title="Pencil Colors">
+      <img src="https://img.icons8.com/?size=100&id=YNFhLi3up6Yq&format=png&color=000000" alt="Pencil Color" style="width:30px; height:30px;">
+  </button>
+  <!-- Hidden Color Picker Input -->
+  <input type="color" id="pencil-color-picker" style="display:none;">
+    <button class="dock-icon" id="zoom-in" title="Zoom In">
+      <img src="https://img.icons8.com/color/48/zoom-in.png" alt="Zoom In" style="width:32px; height:32px;">
+    </button>
+    <button class="dock-icon" id="zoom-out" title="Zoom Out">
+      <img src="https://img.icons8.com/color/48/zoom-out.png" alt="Zoom Out" style="width:32px; height:32px;">
+    </button>
+    <button class="dock-icon" id="zoom-scroll" title="Zoom Scroll">
+      <img src="https://img.icons8.com/?size=100&id=rP2EhCKcbxP1&format=png&color=000000"  style="width:30px; height:30px;">
+    </button>
+    <button class="dock-icon" id="save-default-btn" title="Save Code">
+  <img src="https://img.icons8.com/?size=100&id=lTrPldipqvJc&format=png&color=000000" alt="Save Default" style="width:42px; height:42px;">
+</button>
+</div>
+
+  
+  <!-- Split container for editor and terminal -->
+  <div id="split-container">
+    <!-- Editor Pane -->
+    <div id="pane-editor">
+      <div id="editor-container">
+        <textarea id="code-editor">
+
+████████╗██╗░░██╗███████╗    ░█████╗░██████╗░░█████╗░███╗░░██╗░██████╗░███████╗
+╚══██╔══╝██║░░██║██╔════╝    ██╔══██╗██╔══██╗██╔══██╗████╗░██║██╔════╝░██╔════╝
+░░░██║░░░███████║█████╗░░    ██║░░██║██████╔╝███████║██╔██╗██║██║░░██╗░█████╗░░
+░░░██║░░░██╔══██║██╔══╝░░    ██║░░██║██╔══██╗██╔══██║██║╚████║██║░░╚██╗██╔══╝░░
+░░░██║░░░██║░░██║███████╗    ╚█████╔╝██║░░██║██║░░██║██║░╚███║╚██████╔╝███████╗
+░░░╚═╝░░░╚═╝░░╚═╝╚══════╝    ░╚════╝░╚═╝░░╚═╝╚═╝░░╚═╝╚═╝░░╚══╝░╚═════╝░╚══════╝
+   
+  ██╗░░░██╗███╗░░██╗██╗██╗░░░██╗███████╗██████╗░░██████╗██╗████████╗██╗░░░██╗
+  ██║░░░██║████╗░██║██║██║░░░██║██╔════╝██╔══██╗██╔════╝██║╚══██╔══╝╚██╗░██╔╝
+  ██║░░░██║██╔██╗██║██║╚██╗░██╔╝█████╗░░██████╔╝╚█████╗░██║░░░██║░░░░╚████╔╝░
+  ██║░░░██║██║╚████║██║░╚████╔╝░██╔══╝░░██╔══██╗░╚═══██╗██║░░░██║░░░░░╚██╔╝░░
+  ╚██████╔╝██║░╚███║██║░░╚██╔╝░░███████╗██║░░██║██████╔╝██║░░░██║░░░░░░██║░░░
+  ░╚═════╝░╚═╝░░╚══╝╚═╝░░░╚═╝░░░╚══════╝╚═╝░░╚═╝╚═════╝░╚═╝░░░╚═╝░░░░░░╚═╝░░░
+#
+#                              Orange University LLC!
+#
+# [ Multi-Language Support ]
+#   • Choose from Python, Java, C, C++, JavaScript, PHP, and Perl using
+#     the language icons on the left dock.
+#   • Clicking an icon switches the editor mode and loads sample code for that language.
+#
+# [ Advanced Code Editor ]
+#   • Powered by CodeMirror with line numbering, active line highlighting, and
+#     custom indentation guides for a clean, readable workspace.
+#   • Toggle syntax color themes and use shortcuts (e.g., "cnt + enter" to run,
+#     "ctrl + m" for layout).
+#
+# [ Integrated Terminal ]
+#   • Run your code and view output in real time with adaptive dark/light modes.
+#
+# [ Dynamic Dock System ]
+#   • Left Dock: Language icons.
+#   • Top Dock: Action icons for view modes, fullscreen, theme switching,
+#     dark/light toggling, syntax colors, zoom controls, and code saving.
+#   • Auto-hide feature retracts docks when not in use, maximizing your workspace.
+#
+# [ Drawing & Annotation Tools ]
+#   • Pencil Mode for sketching.
+#   • Eraser Mode with adjustable size and custom control slider.
+#   • Color Picker for customizing your pencil’s hue, plus a "Clear Drawing" button.
+#
+# [ Theme & Appearance Customization ]
+#   • Toggle Dark/Light modes and cycle through various background themes for
+#     both the editor and terminal.
+#
+# [ Smart Code Management ]
+#   • Auto-save stores your work as you type.
+#   • "Save Code" sets a default snippet for each programming language.
+#
+# [ Responsive & Secure Design ]
+#   • Optimized for all devices; right-click and developer shortcuts are disabled.
+#   • Real-time server connectivity via Socket.IO enables on-the-fly code execution.
+#
+#                Happy coding and welcome aboard!
+
+            ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⢀⣀⣠⣤⣤⣤⣤⣄⣀⡀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⠀⢀⣠⣴⣾⣿⡿⠛⠉⠉⠉⠉⠛⢿⣿⣷⣦⣄⡀⠀⠀⠀⠀⠀⠀
+            ⠀⠀⠀⠀⢀⣴⡿⠋⠉⠙⢿⣇⠀⠀⠀⠀⠀⠀⣸⡿⠋⠉⠙⠿⣦⡀⠀⠀⠀⠀
+            ⠀⠀⠀⣰⣿⠋⠀⠀⠀⠀⠈⢿⡀⠀⠀⠀⠀⢠⡿⠁⠀⠀⠀⠀⠘⢿⣆⠀⠀⠀
+            ⠀⠀⣰⣿⣇⠀⠀⠀⠀⠀⠀⠈⢧⠀⠀⠀⠀⡾⠁⠀⠀⠀⠀⠀⠀⣸⣿⣆⠀⠀
+            ⠀⢰⣿⡿⠿⢷⣦⣄⡀⠀⠀⠀⠈⠆⠀⠀⠐⠁⠀⠀⠀⢀⣠⣴⡾⠿⢿⣿⡆⠀
+            ⠀⣾⡟⠀⠀⠀⠀⠈⠉⠓⠢⠄⠀⣠⣴⣦⣄⠀⠠⠔⠚⠉⠉⠀⠀⠀⠀⢻⣷⠀
+            ⠀⣿⡇⠀⠀⠀⠀⠀⠀⠀⠀⠀⠰⣿⣿⣿⣿⠆⠀⠀⠀⠀⠀⠀⠀⠀⠀⢸⣿⠀
+            ⠀⢿⣧⠀⠀⠀⠀⣀⣠⡤⠐⠀⠀⠙⠻⠟⠋⠀⠀⠢⢤⣀⡀⠀⠀⠀⠀⣼⡿⠀
+            ⠀⠸⣿⣷⣶⡾⠟⠋⠁⠀⠀⠀⢀⠆⠀⠀⠠⡀⠀⠀⠀⠈⠙⠻⢷⣶⣾⣿⠇⠀
+            ⠀⠀⠹⣿⡏⠀⠀⠀⠀⠀⠀⢀⡞⠀⠀⠀⠀⢷⡀⠀⠀⠀⠀⠀⠀⢹⣿⠏⠀⠀
+            ⠀⠀⠀⠹⣷⣄⠀⠀⠀⠀⢀⣾⠁⠀⠀⠀⠀⠘⣷⡀⠀⠀⠀⠀⢠⣾⠏⠀⠀⠀
+            ⠀⠀⠀⠀⠈⠻⣷⣤⣀⣠⣾⡇⠀⠀⠀⠀⠀⠀⢹⣷⣄⣀⣠⣶⠟⠁⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⠀⠈⠙⠻⢿⣿⣷⣤⣀⣀⣀⣀⣤⣾⣿⡿⠟⠋⠁⠀⠀⠀⠀⠀⠀
+            ⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀⠈⠉⠙⠛⠛⠛⠛⠋⠉⠁⠀⠀⠀⠀⠀⠀⠀⠀⠀⠀
+
+        </textarea>
+      </div>
+      <button id="runBtn">Run Code</button>
+    </div>
+    <!-- Terminal Pane -->
+    <div id="pane-terminal">
+      <div id="terminal"></div>
+    </div>
+  </div>
+  
+  <!-- Include Socket.IO client library -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/socket.io/4.6.1/socket.io.min.js"></script>
+  <!-- Include CodeMirror JS and modes (duplicates removed) -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/codemirror.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/python/python.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/clike/clike.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/javascript/javascript.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/codemirror/5.65.7/mode/perl/perl.min.js"></script>
+  <!-- Include Split.js for resizable split panes -->
+  <script src="https://unpkg.com/split.js/dist/split.min.js"></script>
+
+  <!-- ALTERNATIVE Indentation Guides Extension -->
+  <script>
+  (function() {
+    CodeMirror.defineExtension("enableSimpleIndentGuides", function() {
+      this.on("renderLine", function(cm, line, element) {
+        var text = line.text;
+        var match = text.match(/^(\s+)/);
+        if (!match) return;
+        var whitespace = match[1];
+        var indentUnit = cm.getOption("indentUnit") || 4;
+        // Convert tabs to spaces (naively)
+        var spaceCount = whitespace.replace(/\t/g, " ".repeat(indentUnit)).length;
+        var level = Math.floor(spaceCount / indentUnit);
+        if (level < 1) return;
+
+        // Create container for indent guides
+        var container = document.createElement("span");
+        container.className = "cm-indent-guides";
+
+        // Insert one vertical bar per indent level.
+        for (var i = 0; i < level; i++) {
+          var guide = document.createElement("span");
+          guide.className = "cm-indent-guide";
+          guide.textContent = "│";
+          container.appendChild(guide);
+        }
+        element.insertBefore(container, element.firstChild);
+      });
+      this.refresh();
+    });
+  })();
+  </script>
+
+  <script>
+
+    // Disable right-click context menu
+document.addEventListener('contextmenu', function(e) {
+  e.preventDefault();
+});
+
+// Disable F12, Ctrl+Shift+I, Ctrl+Shift+J, and Ctrl+U
+document.addEventListener('keydown', function(e) {
+  // F12 key
+  if (e.keyCode === 123) {
+    e.preventDefault();
+  }
+  // Ctrl+Shift+I
+  if (e.ctrlKey && e.shiftKey && e.keyCode === 73) {
+    e.preventDefault();
+  }
+  // Ctrl+Shift+J
+  if (e.ctrlKey && e.shiftKey && e.keyCode === 74) {
+    e.preventDefault();
+  }
+  // Ctrl+U (usually opens the view source window)
+  if (e.ctrlKey && e.keyCode === 85) {
+    e.preventDefault();
+  }
+});
+
+
+
+    // Establish connection with the server via Socket.IO.
+    const socket = io();
+    const terminal = document.getElementById("terminal");
+    const runBtn = document.getElementById("runBtn");
+    const fsToggle = document.getElementById('fullscreen-toggle');
+    const darkModeToggle = document.getElementById('darkmode-toggle');
+    const viewModeToggle = document.getElementById('viewmode-toggle');
+    const themeToggle = document.getElementById('theme-toggle');
+    const topDock = document.getElementById('top-dock');
+    const leftDock = document.getElementById('left-dock');
+
+    const syntaxThemes = [
+    {
+    name: "Cool",
+    keyword: "#FF1493",    // deep pink
+    variable: "#1E90FF",   // dodger blue
+    comment: "#008000",    // lime green
+    string: "#800080",     // purple
+    number: "#FF8C00",     // dark orange
+    operator: "#000000"
+  },
+  {
+    name: "Bright",
+    keyword: "#0000FF",    // blue
+    variable: "#FF4500",   // orange
+    comment: "#008000",    // green
+    string: "#A31515",     // reddish
+    number: "#09885A",     // teal
+    operator: "#000000"    // black
+  },
+  {
+    name: "Minimal",
+    keyword: "#007ACC",    // blue
+    variable: "#795E26",   // brown
+    comment: "#008000",    // green
+    string: "#B000B0",     // magenta
+    number: "#09885A",     // teal
+    operator: "#000000"
+  },
+  {
+    name: "Vibrant",
+    keyword: "#FF007F",    // bright magenta
+    variable: "#00FF7F",   // spring green
+    comment: "#7F00FF",    // violet
+    string: "#FF7F00",     // amber
+    number: "#7FFF00",     // chartreuse
+    operator: "#000000"
+  },
+  {
+    name: "Pastel",
+    keyword: "#A6E3E9",    // pastel blue
+    variable: "#FFB7CE",   // pastel pink
+    comment: "#B4E7B4",    // pastel green
+    string: "#F5CBA7",     // pastel peach
+    number: "#D7BDE2",     // pastel purple
+    operator: "#000000"
+  },
+  {
+    name: "Neon",
+    keyword: "#39FF14",    // neon green
+    variable: "#FF073A",   // neon red
+    comment: "#FE019A",    // neon pink
+    string: "#04D9FF",     // neon blue
+    number: "#FFFF33",     // neon yellow
+    operator: "#FFFFFF"    // white (for dark mode)
+  },
+  {
+    name: "Solarized Light",
+    keyword: "#268bd2",    // blue
+    variable: "#2aa198",   // cyan
+    comment: "#93a1a1",    // base1
+    string: "#dc322f",     // red
+    number: "#b58900",     // yellow
+    operator: "#657b83"    // base00
+  },
+  {
+    name: "Solarized Dark",
+    keyword: "#93a1a1",    // base1
+    variable: "#839496",   // base0
+    comment: "#586e75",    // base01
+    string: "#dc322f",     // red
+    number: "#cb4b16",     // orange
+    operator: "#002b36"    // base03
+  },
+  {
+    name: "Monokai",
+    keyword: "#F92672",    // pink
+    variable: "#A6E22E",   // green
+    comment: "#75715E",    // gray
+    string: "#E6DB74",     // yellowish
+    number: "#AE81FF",     // purple
+    operator: "#F8F8F2"    // off-white
+  },
+  {
+    name: "Dracula",
+    keyword: "#FF79C6",    // pink
+    variable: "#50FA7B",   // green
+    comment: "#6272A4",    // periwinkle
+    string: "#F1FA8C",     // yellow
+    number: "#BD93F9",     // light purple
+    operator: "#8BE9FD"    // cyan
+  },
+  {
+    name: "Oceanic",
+    keyword: "#82AAFF",    // ocean blue
+    variable: "#C792EA",   // light purple
+    comment: "#7E8C8D",    // slate gray
+    string: "#FFCB6B",     // warm yellow
+    number: "#89DDFF",     // light cyan
+    operator: "#ABB2BF"    // gray
+  },
+  {
+    name: "Cobalt",
+    keyword: "#569CD6",    // blue
+    variable: "#9CDCFE",   // light blue
+    comment: "#6A9955",    // green
+    string: "#CE9178",     // reddish-brown
+    number: "#B5CEA8",     // muted green
+    operator: "#D4D4D4"    // light gray
+  },
+  {
+    name: "Sapphire",
+    keyword: "#0F52BA",    // sapphire blue
+    variable: "#1E90FF",   // dodger blue
+    comment: "#4682B4",    // steel blue
+    string: "#7B68EE",     // medium slate blue
+    number: "#5F9EA0",     // cadet blue
+    operator: "#000000"
+  },
+  {
+    name: "Ruby",
+    keyword: "#9B111E",    // ruby red
+    variable: "#E0115F",   // vibrant pink
+    comment: "#800000",    // maroon
+    string: "#FF2400",     // scarlet
+    number: "#C41E3A",     // deep ruby
+    operator: "#000000"
+  },
+  {
+    name: "Emerald",
+    keyword: "#50C878",    // emerald green
+    variable: "#2E8B57",   // sea green
+    comment: "#3CB371",    // medium sea green
+    string: "#66CDAA",     // medium aquamarine
+    number: "#008B8B",     // dark cyan
+    operator: "#000000"
+  },
+  {
+    name: "Lava",
+    keyword: "#FF4500",    // orange red
+    variable: "#FF6347",   // tomato
+    comment: "#CD5C5C",    // indian red
+    string: "#FF7F50",     // coral
+    number: "#DC143C",     // crimson
+    operator: "#000000"
+  },
+  {
+    name: "Twilight",
+    keyword: "#9370DB",    // medium purple
+    variable: "#8B008B",   // dark magenta
+    comment: "#708090",    // slate gray
+    string: "#FF69B4",     // hot pink
+    number: "#FFD700",     // gold
+    operator: "#FFFFFF"    // white (for dark mode)
+  },
+  {
+    name: "Zen",
+    keyword: "#6A5ACD",    // slate blue
+    variable: "#20B2AA",   // light sea green
+    comment: "#778899",    // light slate gray
+    string: "#B0C4DE",     // light steel blue
+    number: "#66CDAA",     // medium aquamarine
+    operator: "#2F4F4F"    // dark slate gray
+  },
+  {
+    name: "Aurora",
+    keyword: "#00D1B2",    // teal
+    variable: "#FF3860",   // vivid pink
+    comment: "#23D160",    // green
+    string: "#FFDD57",     // yellow
+    number: "#3273DC",     // blue
+    operator: "#363636"    // dark gray
+  },
+  {
+    name: "Futuristic",
+    keyword: "#00F5FF",    // bright cyan
+    variable: "#FF00F5",   // vibrant magenta
+    comment: "#CCCCCC",    // light gray
+    string: "#F0FF00",     // bright yellow
+    number: "#FF007F",     // bold pink
+    operator: "#FFFFFF"    // white (for dark backgrounds)
+  }
+];
+
+    let currentSyntaxThemeIndex = 0;
+
+    // Function to apply a syntax theme by injecting/updating a style element.
+    function applySyntaxTheme(theme) {
+  let styleElement = document.getElementById("syntax-theme-style");
+  if (!styleElement) {
+    styleElement = document.createElement("style");
+    styleElement.id = "syntax-theme-style";
+    document.head.appendChild(styleElement);
+  }
+  // Use the dark mode status to decide operator color
+  const operatorColor = document.body.classList.contains('dark-mode') ? '#FFFFFF' : '#000000';
+  styleElement.innerHTML = `
+    /* Override CodeMirror token colors */
+    .CodeMirror .cm-keyword { color: ${theme.keyword} !important; }
+    .CodeMirror .cm-variable { color: ${theme.variable} !important; }
+    .CodeMirror .cm-def { color: ${theme.variable} !important; }
+    .CodeMirror .cm-comment { color: ${theme.comment} !important; }
+    .CodeMirror .cm-string { color: ${theme.string} !important; }
+    .CodeMirror .cm-number { color: ${theme.number} !important; }
+    .CodeMirror .cm-operator { color: ${operatorColor} !important; }
+  `;
+}
+
+
+    // Initialize with the first syntax theme.
+    applySyntaxTheme(syntaxThemes[currentSyntaxThemeIndex]);
+
+    // Add an event listener to the syntax-toggle button.
+    document.getElementById("syntax-toggle").addEventListener("click", () => {
+      currentSyntaxThemeIndex = (currentSyntaxThemeIndex + 1) % syntaxThemes.length;
+      applySyntaxTheme(syntaxThemes[currentSyntaxThemeIndex]);
+    });
+
+    // Global variable for current language. Default is Python.
+    let currentLanguage = 'python';
+  
+    // Initialize CodeMirror on the textarea.
+    /*const codeEditor = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
+      mode: 'python',
+      lineNumbers: true,
+      theme: 'default',
+      styleActiveLine: true,
+      indentUnit: 4,
+      indentWithTabs: false
+    });*/
+
+    // Initialize CodeMirror on the textarea.
+    window.codeEditor = CodeMirror.fromTextArea(document.getElementById("code-editor"), {
+  mode: 'python',
+  lineNumbers: true,
+  theme: 'default',
+  styleActiveLine: true, // Enables the "cursor line"/active line highlighting
+  indentUnit: 4,
+  indentWithTabs: true
+});
+
+  /*window.addEventListener('load', function() {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    if (code && window.codeEditor) {
+      window.codeEditor.setValue(code);
+    } else if (code) {
+      // In case codeEditor is not yet ready, check periodically
+      let checkEditor = setInterval(function() {
+        if (window.codeEditor) {
+          window.codeEditor.setValue(code);
+          clearInterval(checkEditor);
+        }
+      }, 100);
+    }
+  });*/
+
+  /*Docks Animaton want to happen once while starting, after that, docks dont distrub 
+  "Toggle Docks" Button */
+
+  document.addEventListener('DOMContentLoaded', function() {
+    const topDock = document.getElementById('top-dock');
+    const leftDock = document.getElementById('left-dock');
+
+    leftDock.addEventListener('animationend', function() {
+        leftDock.style.animation = 'none';
+    });
+
+    topDock.addEventListener('animationend', function() {
+        topDock.style.animation = 'none';
+    });
+});
+/*Active Programming Languge colour and black & white toggle*/
+
+
+
+/*Active Programming Languge colour and black & white toggle ENDED*/
+
+
+/*W3 Compiler connect with it
+  
+  window.addEventListener('load', function() {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const language = params.get('language');
+
+    // Load the sample code into the editor.
+    if (code && window.codeEditor) {
+      window.codeEditor.setValue(code);
+    } else if (code) {
+      // Check periodically if the editor is ready.
+      let checkEditor = setInterval(function() {
+        if (window.codeEditor) {
+          window.codeEditor.setValue(code);
+          clearInterval(checkEditor);
+        }
+      }, 100);
+    }
+
+    // If the language parameter is 'javascript', switch the editor mode.(W3 SCHOOL CONNECT)
+    if (language === 'javascript') {
+      currentLanguage = 'javascript';
+      codeEditor.setOption("mode", "javascript");
+      setActiveLanguageButton('javascript-btn');
+      // Optionally, you can also simulate a click on the JavaScript button:
+      // document.getElementById('javascript-btn').click();
+    }
+    else if (language === 'python') {
+      currentLanguage = 'python';
+      codeEditor.setOption("mode", "python");
+      setActiveLanguageButton('python-btn');
+      // Optionally, you can also simulate a click on the JavaScript button:
+      // document.getElementById('javascript-btn').click();
+    }
+
+    //its like give to another languges
+  });*/
+
+  /*W3 Compiler connect with it ----------------------------------------------------------- */
+
+  window.addEventListener('load', function() {
+    const params = new URLSearchParams(window.location.search);
+    const code = params.get('code');
+    const language = params.get('language');
+
+    // Load the sample code into the editor.
+    if (code && window.codeEditor) {
+      window.codeEditor.setValue(code);
+    } else if (code) {
+      let checkEditor = setInterval(function() {
+        if (window.codeEditor) {
+          window.codeEditor.setValue(code);
+          clearInterval(checkEditor);
+        }
+      }, 100);
+    }
+
+    // Set the CodeMirror mode based on the language parameter.
+    if (language) {
+      switch (language.toLowerCase()) {
+        case 'javascript':
+          currentLanguage = 'javascript';
+          codeEditor.setOption("mode", "javascript");
+          setActiveLanguageButton('javascript-btn');
+          break;
+        case 'python':
+          currentLanguage = 'python';
+          codeEditor.setOption("mode", "python");
+          setActiveLanguageButton('python-btn');
+          break;
+        case 'java':
+          currentLanguage = 'java';
+          codeEditor.setOption("mode", "text/x-java");
+          setActiveLanguageButton('java-btn');
+          break;
+        case 'c':
+          currentLanguage = 'c';
+          codeEditor.setOption("mode", "text/x-csrc");
+          setActiveLanguageButton('c-btn');
+          break;
+        case 'c++':
+        case 'cpp':
+          currentLanguage = 'c++';
+          codeEditor.setOption("mode", "text/c-++src");
+          setActiveLanguageButton('cpp-btn');
+          break;
+        case 'php':
+          currentLanguage = 'php';
+          codeEditor.setOption("mode", "php");
+          setActiveLanguageButton('php-btn');
+          break;
+        case 'perl':
+          currentLanguage = 'perl';
+          codeEditor.setOption("mode", "text/x-perl");
+          setActiveLanguageButton('perl-btn');
+          break;
+        default:
+          // Fallback to plain text if the language is not recognized.
+          currentLanguage = 'plain';
+          codeEditor.setOption("mode", "text/plain");
+          break;
+      }
+    }
+  });
+
+
+
+
+//DOCKS HIDDEN AND SHOWING WHILE ONLY MOUSE REACH
+// Global variables to track docks visibility, auto-hide timer, and auto-hide mode.
+
+let docksVisible = false;
+let autoHideTimeout;
+let autoHideActive = false;  // Default: auto-hide is off
+
+// Functions to show/hide docks and adjust the code pane margins.
+function showDocks() {
+  clearTimeout(autoHideTimeout);
+  topDock.classList.remove('hidden');
+  leftDock.classList.remove('hidden');
+  const container = document.getElementById('split-container');
+  container.style.marginTop = '50px';
+  container.style.marginLeft = '50px';
+  container.style.width = 'calc(100% - 50px)';
+  container.style.height = 'calc(100vh - 50px)';
+  docksVisible = true;
+}
+
+function hideDocks() {
+  topDock.classList.add('hidden');
+  leftDock.classList.add('hidden');
+  const container = document.getElementById('split-container');
+  container.style.marginTop = '0';
+  container.style.marginLeft = '0';
+  container.style.width = '100%';
+  container.style.height = '100vh';
+  docksVisible = false;
+}
+
+
+// On page load, if auto-hide is not active then show docks.
+window.addEventListener('load', () => {
+  if (!autoHideActive) {
+    showDocks();
+  } else {
+    hideDocks();
+  }
+});
+
+// Listen for mouse movement only when auto-hide mode is active.
+document.addEventListener('mousemove', (e) => {
+  if (!autoHideActive) return; // Only process if auto-hide is enabled
+
+  if (e.clientY < 20 || e.clientX < 20) {
+    if (!docksVisible) {
+      showDocks();
+    }
+  } else {
+    clearTimeout(autoHideTimeout);
+    autoHideTimeout = setTimeout(() => {
+      hideDocks();
+    }, 200);
+  }
+});
+
+// Toggle button for manual control over auto-hide mode. (Top Dock 1st Icon Issues)
+document.getElementById('dock-toggle').addEventListener('click', () => {
+  autoHideActive = !autoHideActive;
+  const toggleButton = document.getElementById('dock-toggle');
+  const toggleImg = toggleButton.querySelector('img');
+
+  if (autoHideActive) {
+    // Activate auto-hide: add active class, change icon to active image, and hide docks.
+    toggleButton.classList.add('active');
+    toggleImg.src = "https://img.icons8.com/?size=100&id=7c1O45vwNKF8&format=png&color=000000";
+    hideDocks();
+  } else {
+    // Deactivate auto-hide: remove active class, revert icon, and show docks.
+    toggleButton.classList.remove('active');
+    toggleImg.src = "https://img.icons8.com/?size=100&id=qxnheTBF0af8&format=png&color=000000";
+    showDocks();
+    clearTimeout(autoHideTimeout);
+  }
+});
+
+/*--------------*/
+
+
+/*Drawing Pencil, Eraser Button & Size Change, All Eraser, Color Picker Start
+-------------------------------------*/
+
+(() => {
+  // --- DOM Elements ---
+  const writeBtn = document.getElementById('write-btn');
+  const eraserBtn = document.getElementById('eraser-btn');
+  const container = document.getElementById('split-container');
+  const codeEditor = document.getElementById('code-editor'); // Optional: Code editor element.
+  const clearDrawingBtn = document.getElementById('clear-drawing-btn');
+  const pencilColorBtn = document.getElementById('pencil-color-btn');
+  const pencilColorPicker = document.getElementById('pencil-color-picker');
+
+  // --- State Variables ---
+let pencilMode = false;
+let eraserMode = false;
+let drawingCanvas = null;
+let drawingCtx = null;
+let isDrawing = false;
+let lastX = 0;
+let lastY = 0;
+let eraserSize = 10; // default eraser size
+let currentPencilColor = '#000000';
+let eraserControl = null; // The eraser size slider UI
+
+// --- Inject CSS for the Eraser Control ---
+// This function now uses the dark mode status to set background, border, and text colors.
+function injectEraserCSS() {
+  const darkMode = document.body.classList.contains('dark-mode');
+  const style = document.createElement('style');
+  style.textContent = `
+    #eraser-control {
+      position: absolute;
+      background: ${darkMode ? '#333' : '#fff'};
+      border: 1px solid ${darkMode ? '#555' : '#ccc'};
+      padding: 5px;
+      z-index: 2000;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.3);
+      display: none;
+      cursor: default;
+    }
+    #eraser-control label {
+      margin-right: 5px;
+      color: ${darkMode ? '#fff' : '#000'};
+    }
+    #eraser-control input[type="range"] {
+      vertical-align: middle;
+      cursor: default;
+    }
+    /* Force the eraser size value text to be black */
+    #eraser-control span {
+      color: #000;
+    }
+  `;
+  document.head.appendChild(style);
+}
+injectEraserCSS();
+
+
+// --- Canvas Creation & Removal ---
+function createDrawingCanvas() {
+  if (!drawingCanvas) {
+    container.style.position = 'relative';
+    drawingCanvas = document.createElement('canvas');
+    drawingCanvas.id = 'drawing-canvas';
+    drawingCanvas.style.position = 'absolute';
+    drawingCanvas.style.top = '0';
+    drawingCanvas.style.left = '0';
+    drawingCanvas.style.zIndex = '1500';
+    drawingCanvas.style.pointerEvents = 'auto';
+    container.appendChild(drawingCanvas);
+
+    drawingCanvas.width = container.clientWidth;
+    drawingCanvas.height = container.clientHeight;
+    drawingCtx = drawingCanvas.getContext('2d');
+    drawingCtx.lineCap = 'round';
+  }
+}
+
+function removeDrawingCanvas() {
+  if (drawingCanvas) {
+    removeCanvasListeners();
+    drawingCanvas.parentNode.removeChild(drawingCanvas);
+    drawingCanvas = null;
+    drawingCtx = null;
+  }
+}
+
+// --- Update Drawing Settings ---
+// Global variable to store the last used pencil color
+let lastUsedPencilColor = null;
+
+function updateDrawingSettings() {
+  if (!drawingCtx) return;
+
+  // If no color has been set by the user, set a default based on dark mode
+  if (!lastUsedPencilColor) {
+    lastUsedPencilColor = document.body.classList.contains('dark-mode') ? 'red' : 'green';
+  }
+  
+  // Use the stored color
+  currentPencilColor = lastUsedPencilColor;
+
+  if (pencilMode) {
+    drawingCtx.globalCompositeOperation = 'source-over';
+    drawingCtx.strokeStyle = currentPencilColor; // Use the preserved color
+    drawingCtx.lineWidth = 2;
+    drawingCanvas.style.cursor = 'crosshair';
+  } else if (eraserMode) {
+    drawingCtx.globalCompositeOperation = 'destination-out';
+    drawingCtx.lineWidth = eraserSize;
+    updateEraserCursor();
+  }
+
+  console.log("Updated Pencil Color:", currentPencilColor);
+}
+
+// Update the stored color when the user selects a new color
+pencilColorPicker.addEventListener('change', (e) => {
+  lastUsedPencilColor = e.target.value;
+  if (drawingCtx && pencilMode) {
+    drawingCtx.strokeStyle = lastUsedPencilColor;
+  }
+});
+
+
+
+// --- Custom Eraser Cursor ---
+// This function now adjusts the fill and stroke colors based on dark mode.
+function updateEraserCursor() {
+  if (!drawingCanvas) return;
+  const darkMode = document.body.classList.contains('dark-mode');
+  const cursorCanvas = document.createElement('canvas');
+  const size = parseInt(eraserSize, 10);
+  cursorCanvas.width = size;
+  cursorCanvas.height = size;
+  const ctx = cursorCanvas.getContext('2d');
+  ctx.beginPath();
+  ctx.arc(size / 2, size / 2, (size / 2) - 1, 0, Math.PI * 2);
+  
+  if (darkMode) {
+    // Lighter colors for dark backgrounds
+    ctx.fillStyle = 'rgba(255, 255, 255, 0.6)';
+    ctx.strokeStyle = 'rgba(255, 255, 255, 0.8)';
+  } else {
+    // Darker colors for light backgrounds
+    ctx.fillStyle = 'rgba(0, 0, 0, 0.3)';
+    ctx.strokeStyle = 'rgba(0, 0, 0, 0.8)';
+  }
+  
+  ctx.fill();
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  const dataURL = cursorCanvas.toDataURL();
+  drawingCanvas.style.cursor = `url(${dataURL}) ${size / 2} ${size / 2}, auto`;
+}
+
+// --- Drawing Event Handlers ---
+function startDrawing(e) {
+  isDrawing = true;
+  const rect = drawingCanvas.getBoundingClientRect();
+  lastX = e.clientX - rect.left;
+  lastY = e.clientY - rect.top;
+}
+
+function draw(e) {
+  if (!isDrawing) return;
+  const rect = drawingCanvas.getBoundingClientRect();
+  const x = e.clientX - rect.left;
+  const y = e.clientY - rect.top;
+  drawingCtx.beginPath();
+  drawingCtx.moveTo(lastX, lastY);
+  drawingCtx.lineTo(x, y);
+  drawingCtx.stroke();
+  lastX = x;
+  lastY = y;
+}
+
+function stopDrawing() {
+  isDrawing = false;
+}
+
+function addCanvasListeners() {
+  drawingCanvas.addEventListener('mousedown', startDrawing);
+  drawingCanvas.addEventListener('mousemove', draw);
+  drawingCanvas.addEventListener('mouseup', stopDrawing);
+  drawingCanvas.addEventListener('mouseleave', stopDrawing);
+}
+
+function removeCanvasListeners() {
+  if (drawingCanvas) {
+    drawingCanvas.removeEventListener('mousedown', startDrawing);
+    drawingCanvas.removeEventListener('mousemove', draw);
+    drawingCanvas.removeEventListener('mouseup', stopDrawing);
+    drawingCanvas.removeEventListener('mouseleave', stopDrawing);
+  }
+}
+
+// --- Eraser Control UI ---
+// The eraser control (slider box) is created with the colors already set by the injected CSS.
+function createEraserControl() {
+  if (!eraserControl) {
+    eraserControl = document.createElement('div');
+    eraserControl.id = 'eraser-control';
+    eraserControl.style.top = '60px';
+    eraserControl.style.right = '10px';
+    eraserControl.innerHTML = `
+      <label for="eraser-size-range">Eraser Size:</label>
+      <input type="range" id="eraser-size-range" min="5" max="50" value="${eraserSize}">
+      <span id="eraser-size-display">${eraserSize}</span>
+    `;
+    document.body.appendChild(eraserControl);
+
+    const eraserSizeRange = eraserControl.querySelector('#eraser-size-range');
+    const eraserSizeDisplay = eraserControl.querySelector('#eraser-size-display');
+
+    eraserSizeRange.addEventListener('input', (e) => {
+      eraserSize = parseInt(e.target.value, 10);
+      eraserSizeDisplay.textContent = eraserSize;
+      if (eraserMode && drawingCtx) {
+        drawingCtx.lineWidth = eraserSize;
+        updateEraserCursor(); // Immediately update cursor
+      }
+    });
+
+    eraserControl.addEventListener('mouseleave', () => {
+      setTimeout(() => {
+        if (eraserControl && !eraserControl.matches(':hover')) {
+          eraserControl.style.display = 'none';
+        }
+      }, 2000);
+    });
+  }
+}
+
+
+  function removeEraserControl() {
+    if (eraserControl) {
+      document.body.removeChild(eraserControl);
+      eraserControl = null;
+    }
+  }
+
+  // --- Top Dock / Eraser Button Events ---
+  eraserBtn.addEventListener('mouseenter', () => {
+    if (eraserMode && eraserControl) {
+      eraserControl.style.display = 'block';
+    }
+  });
+  eraserBtn.addEventListener('mouseleave', () => {
+    setTimeout(() => {
+      if (eraserControl && !eraserControl.matches(':hover')) {
+        eraserControl.style.display = 'none';
+      }
+    }, 5000);
+  });
+
+  // --- Code Editor Eraser Control Access ---
+  if (codeEditor) {
+    codeEditor.addEventListener('mousemove', (e) => {
+      if (eraserMode && eraserControl) {
+        eraserControl.style.top = (e.clientY + 10) + 'px';
+        eraserControl.style.left = (e.clientX + -760) + 'px';
+        eraserControl.style.display = 'block';
+      }
+    });
+    codeEditor.addEventListener('mouseleave', () => {
+      setTimeout(() => {
+        if (eraserControl && !eraserControl.matches(':hover')) {
+          eraserControl.style.display = 'none';
+        }
+      }, 5000);
+    });
+  }
+
+  /*Disable Darkmode button while use eraser mode and drawing mode------------------*/
+  // Add this helper function (place it near where pencilMode and eraserMode are defined)
+function updateDarkModeToggleState() {
+  const darkModeToggle = document.getElementById('darkmode-toggle');
+  if (pencilMode || eraserMode) {
+    darkModeToggle.disabled = true;
+    darkModeToggle.style.opacity = '0.0';
+  } else {
+    darkModeToggle.disabled = false;
+    darkModeToggle.style.opacity = '1';
+  }
+}
+
+
+  /*-------------------------------------------------------------------------------*/
+
+  // --- Mode Toggle Handlers ---
+  // Toggle Write Mode: Scale write button and update icon when active.
+writeBtn.addEventListener('click', () => {
+  pencilMode = !pencilMode;
+  if (pencilMode) {
+    // Turn off eraser mode
+    eraserMode = false;
+    // Reset eraser button style and icon to its deactivated state
+    eraserBtn.style.transform = "";
+    eraserBtn.querySelector('img').src = 'https://img.icons8.com/?size=100&id=12115&format=png&color=000000';
+    
+    // Activate write mode: scale and shift the write button
+    writeBtn.style.transform = "scale(1.5) translateY(5px)";
+    // Set the active write mode icon
+    writeBtn.querySelector('img').src = 'https://img.icons8.com/?size=100&id=11888&format=png&color=000000';
+    
+    createDrawingCanvas();
+    drawingCanvas.style.pointerEvents = 'auto';
+    updateDrawingSettings();
+    addCanvasListeners();
+  } else {
+    // Deactivate write mode: reset the write button style and icon
+    writeBtn.style.transform = "";
+    writeBtn.querySelector('img').src = 'https://img.icons8.com/?size=100&id=13370&format=png&color=000000';
+    removeCanvasListeners();
+    if (drawingCanvas) {
+      drawingCanvas.style.pointerEvents = 'none';
+      drawingCanvas.style.cursor = 'default';
+    }
+  }
+  updateDarkModeToggleState();
+});
+
+// Toggle Eraser Mode: Scale eraser button and update icon when active.
+eraserBtn.addEventListener('click', () => {
+  eraserMode = !eraserMode;
+  if (eraserMode) {
+    // Turn off write mode
+    pencilMode = false;
+    // Reset write button style and icon to its deactivated state
+    writeBtn.style.transform = "";
+    writeBtn.querySelector('img').src = 'https://img.icons8.com/?size=100&id=13370&format=png&color=000000';
+    
+    // Activate eraser mode: scale and shift the eraser button
+    eraserBtn.style.transform = "scale(1.5) translateY(5px)";
+    // Set the active eraser mode icon
+    eraserBtn.querySelector('img').src = 'https://img.icons8.com/?size=100&id=0Pemw6k5sNbf&format=png&color=000000';
+    
+    createDrawingCanvas();
+    drawingCanvas.style.pointerEvents = 'auto';
+    updateDrawingSettings();
+    addCanvasListeners();
+    updateEraserCursor();
+    createEraserControl();
+    eraserControl.style.display = 'block';
+  } else {
+    // Deactivate eraser mode: reset the eraser button style and icon
+    eraserBtn.style.transform = "";
+    eraserBtn.querySelector('img').src = 'https://img.icons8.com/?size=100&id=12115&format=png&color=000000';
+    removeCanvasListeners();
+    if (drawingCanvas) {
+      drawingCanvas.style.pointerEvents = 'none';
+      drawingCanvas.style.cursor = 'default';
+    }
+    removeEraserControl();
+  }
+  updateDarkModeToggleState();
+});
+
+
+/*Disable Darkmode button while use eraser mode and drawing mode ENDED------------------*/
+  // --- Clear Drawing Button ---
+  clearDrawingBtn.addEventListener('click', () => {
+    if (drawingCtx && drawingCanvas) {
+      drawingCtx.clearRect(0, 0, drawingCanvas.width, drawingCanvas.height);
+    }
+  });
+
+  // --- Pencil Color Picker ---
+  pencilColorBtn.addEventListener('click', () => {
+    pencilColorPicker.click();
+  });
+
+  pencilColorPicker.addEventListener('change', (e) => {
+    currentPencilColor = e.target.value;
+    if (drawingCtx && pencilMode) {
+      drawingCtx.strokeStyle = currentPencilColor;
+    }
+  });
+})();
+
+/*all*/
+
+
+
+
+// Adjust the canvas size if the window is resized.
+window.addEventListener('resize', () => {
+  if (drawingCanvas) {
+    const container = document.getElementById('split-container');
+    drawingCanvas.width = container.clientWidth;
+    drawingCanvas.height = container.clientHeight;
+  }
+});
+
+/*/*Drawing Pencil, Eraser Button & Size Change, All Eraser, Color Picker Ended
+-------------------------------------*/
+/* SAVE Button click while want to show .gif as loading effect------------------------*/
+
+document.getElementById('save-default-btn').addEventListener('click', () => {
+    const btn = document.getElementById('save-default-btn');
+    const btnImg = btn.querySelector('img');
+    
+    // Change image to the temporary one upon click.
+    btnImg.src = "https://cdn.pixabay.com/animation/2022/10/11/03/16/03-16-39-160_512.gif";
+    
+    // Save the default code (example operation).
+    localStorage.setItem('default_' + currentLanguage, codeEditor.getValue());
+    btn.disabled = true;
+    console.log("Default code saved for " + currentLanguage);
+    
+    // After 5 seconds, revert the image back and re-enable the button.
+    setTimeout(() => {
+       btnImg.src = "https://img.icons8.com/?size=100&id=lTrPldipqvJc&format=png&color=000000";
+       btn.disabled = false;
+    }, 2000);
+  });
+
+/* Save Button click while want to show .gif as loading effect ENDED ---------------------*/
+
+/*Resume coding while come back to previsous coded prohramming language---------------*/
+
+
+(function() {
+  // Global current language (default to Python)
+  var currentLanguage = 'python';
+  window.currentLanguage = currentLanguage;
+
+  // Hard-coded examples for each language
+  var languageExamples = {
+    python: `# Example Python Code:
+cnt + enter = run code
+cntrl + m = position
+press enter after input enter
+
+name = input("Enter your name: ")
+age = input("Enter your age: ")
+
+try:
+    age = int(age)
+except ValueError:
+    print("Invalid age input. Please enter a number.")
+    exit()
+
+print("Hello, " + name + "!")
+print("You are " + str(age) + " years old.")
+
+next_year_age = age + 1
+print("Next year, you will be " + str(next_year_age) + " years old.")
+
+if age >= 18:
+    print("You are an adult.")
+else:
+    print("You are not yet an adult.")`,
+    java: `// Java Example Code:
+import java.util.Scanner;
+
+public class Main {
+    public static void main(String[] args) {
+        Scanner scanner = new Scanner(System.in);
+        System.out.print("Enter your name: ");
+        String name = scanner.nextLine();
+        System.out.print("Enter your age: ");
+        int age = scanner.nextInt();
+        System.out.println("Hello, " + name + "!");
+        System.out.println("You are " + age + " years old.");
+        scanner.close();
+    }
+}`,
+    c: `// C Example Code:
+#include <stdio.h>
+
+int main() {
+    char name[50];
+    int age;
+    printf("Enter your name: ");
+    scanf("%s", name);
+    printf("Enter your age: ");
+    scanf("%d", &age);
+    printf("Hello, %s!\\n", name);
+    printf("You are %d years old.\\n", age);
+    return 0;
+}`,
+    "c++": `// C++ Example Code:
+#include <iostream>
+using namespace std;
+
+int main() {
+    string name;
+    cout << "Enter your name: ";
+    cin >> name;
+    cout << "Hello, " << name << "!" << endl;
+    return 0;
+}`,
+    javascript: `// JavaScript Example Code:
+const readline = require('readline').createInterface({
+  input: process.stdin,
+  output: process.stdout
+});
+
+readline.question('Enter your name: ', name => {
+  console.log(\`Hello, \${name}!\`);
+  readline.close();
+});`,
+    php: `<?php
+// PHP Example Code:
+echo "Enter your name: ";
+$name = trim(fgets(STDIN));
+echo "Hello, " . $name . "\\n";
+?>`,
+    perl: `# Perl Example Code:
+print "Enter your name: ";
+my $name = <STDIN>;
+chomp($name);
+print "Hello, $name!\\n";`
+  };
+
+  // Helper: returns saved default code if exists, otherwise returns the hard-coded example.
+  function getCodeForLanguage(lang) {
+    var defaultKey = 'default_' + lang;
+    var savedDefault = localStorage.getItem(defaultKey);
+    return (savedDefault && savedDefault.trim() !== "") ? savedDefault : languageExamples[lang];
+  }
+
+  // Update active language button visuals
+  function setActiveLanguageButton(activeId) {
+    var buttons = document.querySelectorAll('#left-dock .dock-icon');
+    buttons.forEach(function(btn) {
+      var img = btn.querySelector('img');
+      if (btn.id === activeId) {
+        btn.classList.add('active');
+        img.src = btn.getAttribute('data-black');
+      } else {
+        btn.classList.remove('active');
+        img.src = btn.getAttribute('data-color');
+      }
+    });
+  }
+
+  // Switch language: update CodeMirror mode, load code, and re-enable the Save Default button.
+  function switchLanguage(lang, mode, buttonId) {
+    currentLanguage = lang;
+    window.codeEditor.setOption("mode", mode);
+    setActiveLanguageButton(buttonId);
+    var code = getCodeForLanguage(lang);
+    codeEditor.setValue(code);
+    window.currentLanguage = lang;
+    // Re-enable the Save Default button when switching languages.
+    document.getElementById('save-default-btn').disabled = false;
+  }
+
+  // Attach event listeners for all language buttons
+  document.getElementById('python-btn').addEventListener('click', () => {
+    switchLanguage('python', 'python', 'python-btn');
+  });
+  document.getElementById('java-btn').addEventListener('click', () => {
+    switchLanguage('java', 'text/x-java', 'java-btn');
+  });
+  document.getElementById('c-btn').addEventListener('click', () => {
+    switchLanguage('c', 'text/x-csrc', 'c-btn');
+  });
+  document.getElementById('cpp-btn').addEventListener('click', () => {
+    switchLanguage('c++', 'text/x-c++src', 'cpp-btn');
+  });
+  document.getElementById('javascript-btn').addEventListener('click', () => {
+    switchLanguage('javascript', 'javascript', 'javascript-btn');
+  });
+  document.getElementById('php-btn').addEventListener('click', () => {
+    switchLanguage('php', 'php', 'php-btn');
+  });
+  document.getElementById('perl-btn').addEventListener('click', () => {
+    switchLanguage('perl', 'text/x-perl', 'perl-btn');
+  });
+
+  // Save Default button: when clicked, save the current CodeMirror content as the default for currentLanguage,
+  // then disable the button.
+  document.getElementById('save-default-btn').addEventListener('click', () => {
+    localStorage.setItem('default_' + currentLanguage, codeEditor.getValue());
+    document.getElementById('save-default-btn').disabled = true;
+    console.log("Default code saved for " + currentLanguage);
+  });
+
+  // Optional: Auto-save changes for the active language (saved in a separate autosave key)
+  window.codeEditor.on("change", function() {
+    localStorage.setItem(currentLanguage + '_autosave', codeEditor.getValue());
+    console.log("Auto-saved code for " + currentLanguage);
+  });
+
+})();
+
+/*Resume coding while come back to previsous coded prohramming language ENDED------------------*/
+  
+
+  // update the active state of language buttons
+  // Corrected setActiveLanguageButton: updates the icon src based on active state.
+  function setActiveLanguageButton(activeId) {
+    const buttons = document.querySelectorAll('#left-dock .dock-icon');
+    buttons.forEach(btn => {
+      const img = btn.querySelector('img');
+      if (btn.id === activeId) {
+        btn.classList.add('active');
+        img.src = btn.getAttribute('data-black');
+      } else {
+        btn.classList.remove('active');
+        img.src = btn.getAttribute('data-color');
+      }
+    });
+  }
+
+  // Example event listeners for language buttons.
+  document.getElementById('python-btn').addEventListener('click', () => {
+    currentLanguage = 'python';
+    codeEditor.setOption("mode", "python");
+    setActiveLanguageButton('python-btn');
+  });
+
+  document.getElementById('java-btn').addEventListener('click', () => {
+    currentLanguage = 'java';
+    codeEditor.setOption("mode", "text/x-java");
+    setActiveLanguageButton('java-btn');
+  });
+
+  document.getElementById('c-btn').addEventListener('click', () => {
+    currentLanguage = 'c';
+    codeEditor.setOption("mode", "text/x-csrc");
+    setActiveLanguageButton('c-btn');
+  });
+
+  document.getElementById('cpp-btn').addEventListener('click', () => {
+    currentLanguage = 'c++';
+    codeEditor.setOption("mode", "text/c-++src");
+    setActiveLanguageButton('cpp-btn');
+  });
+
+  document.getElementById('javascript-btn').addEventListener('click', () => {
+    currentLanguage = 'javascript';
+    codeEditor.setOption("mode", "javascript");
+    setActiveLanguageButton('javascript-btn');
+  });
+
+  document.getElementById('php-btn').addEventListener('click', () => {
+    currentLanguage = 'php';
+    codeEditor.setOption("mode", "php");
+    setActiveLanguageButton('php-btn');
+  });
+
+  document.getElementById('perl-btn').addEventListener('click', () => {
+    currentLanguage = 'perl';
+    codeEditor.setOption("mode", "text/x-perl");
+    setActiveLanguageButton('perl-btn');
+  });
+
+  
+
+  
+
+  // Define an array of 5 background (CODE EDITOR & TERMINAL) themes
+  const bgThemes = [
+  { name: "Violet Dream", background: "#f0e6ff" },
+  { name: "Forest Green", background: "#e6f9e6" },
+  { name: "Coral Reef", background: "#fff0e6" },
+  { name: "Crimson Red", background: "#ffe6e6" },
+  { name: "Royal Gold", background: "#fffbe6" },
+  { name: "Arctic Blue", background: "#e6f7ff" },
+  { name: "Mystic Lavender", background: "#f4eefe" },
+  { name: "Electric Indigo", background: "#ebe6ff" },
+  { name: "Ruby Red", background: "#f9e6e7" },
+  { name: "Sapphire Blue", background: "#e6f0ff" },
+  { name: "Blush Pink", background: "#ffe6f0" },
+  { name: "Mint Green", background: "#e6f9f3" },
+  { name: "Steel Gray", background: "#e0e4e8" },
+  { name: "Copper Brown", background: "#f9eae3" },
+  { name: "Aqua Marine", background: "#e0fff8" },
+  { name: "Peachy Keen", background: "#fff4e6" },
+  { name: "Plum Delight", background: "#f5e6f4" },
+  { name: "Sunrise", background: "#ffece6" },
+  { name: "Dusk", background: "#e6e0f2" },
+  { name: "Frosty Blue", background: "#e6f2f4" },
+];
+
+
+let currentBgThemeIndex = 0;
+
+//Background theme toggle button---------------------------------------------
+
+// Background Theme Toggle Event Handler (merged into one listener)
+document.getElementById('bg-theme-toggle').addEventListener('click', () => {
+  // If dark mode is active, do nothing (button is disabled)
+  if (document.body.classList.contains('dark-mode')) {
+    return;
+  }
+  // Cycle through the bgThemes array and update the last-activated bg theme index
+  currentBgThemeIndex = (currentBgThemeIndex + 1) % bgThemes.length;
+  const theme = bgThemes[currentBgThemeIndex];
+
+  // Apply the new bg theme to editor and terminal areas
+  const editorContainer = document.getElementById('editor-container');
+  editorContainer.style.backgroundColor = theme.background;
+  editorContainer.style.color = theme.textColor;
+  
+  codeEditor.getWrapperElement().style.backgroundColor = theme.background;
+  
+  const paneTerminal = document.getElementById('pane-terminal');
+  paneTerminal.style.backgroundColor = theme.background;
+  paneTerminal.style.color = theme.textColor;
+  
+  const terminal = document.getElementById('terminal');
+  terminal.style.backgroundColor = theme.background;
+  terminal.style.color = theme.textColor;
+});
+
+/*BAckground theme change effect ended----------------------------------------------*/
+
+
+/*line hightlight when cursor is blink in particular of line in coding----------------*/
+
+// Alternative active-line highlighting using cursorActivity event
+var activeLineHandle = null;
+codeEditor.on("cursorActivity", function() {
+  var cursor = codeEditor.getCursor();
+  var newActiveLine = codeEditor.getLineHandle(cursor.line);
+  if (activeLineHandle !== newActiveLine) {
+    if (activeLineHandle) {
+      codeEditor.removeLineClass(activeLineHandle, "background", "active-line-custom");
+    }
+    codeEditor.addLineClass(newActiveLine, "background", "active-line-custom");
+    activeLineHandle = newActiveLine;
+  }
+});
+
+/*line hightlight when cursor is blink in particular of line in coding ENDED--------------*/
+
+
+
+
+
+
+    // Ensure CodeMirror fills the available height in its container.
+    codeEditor.setSize(null, "100%");
+    // Reveal the editor container now that CodeMirror is initialized.
+    document.getElementById("editor-container").style.visibility = "visible";
+
+    // NEW: Enable the alternative (simple) indent guides on the editor.
+    codeEditor.enableSimpleIndentGuides();
+
+    // --- NEW: Zoom Controls ---
+    // Global zoom variables
+    let currentZoom = 1.0;
+    const baseFontSize = 14; // in pixels
+    // Set initial font size on the CodeMirror wrapper
+    const wrapper = codeEditor.getWrapperElement();
+    wrapper.style.fontSize = baseFontSize + "px";
+
+    // Zoom In Button
+    document.getElementById('zoom-in').addEventListener('click', function() {
+      const wrapper = codeEditor.getWrapperElement();
+      const oldZoom = currentZoom;
+      const newZoom = oldZoom + 0.1;
+      currentZoom = newZoom;
+      // Use center of visible area as zoom focal point
+      const scrollLeft = wrapper.scrollLeft;
+      const scrollTop = wrapper.scrollTop;
+      const rect = wrapper.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      wrapper.scrollLeft = ((centerX + scrollLeft) * newZoom / oldZoom) - centerX;
+      wrapper.scrollTop = ((centerY + scrollTop) * newZoom / oldZoom) - centerY;
+      wrapper.style.fontSize = (baseFontSize * newZoom) + "px";
+      codeEditor.refresh();
+    });
+
+    // Zoom Out Button
+    document.getElementById('zoom-out').addEventListener('click', function() {
+      const wrapper = codeEditor.getWrapperElement();
+      const oldZoom = currentZoom;
+      const newZoom = Math.max(oldZoom - 0.1, 0.5);
+      currentZoom = newZoom;
+      const scrollLeft = wrapper.scrollLeft;
+      const scrollTop = wrapper.scrollTop;
+      const rect = wrapper.getBoundingClientRect();
+      const centerX = rect.width / 2;
+      const centerY = rect.height / 2;
+      wrapper.scrollLeft = ((centerX + scrollLeft) * newZoom / oldZoom) - centerX;
+      wrapper.scrollTop = ((centerY + scrollTop) * newZoom / oldZoom) - centerY;
+      wrapper.style.fontSize = (baseFontSize * newZoom) + "px";
+      codeEditor.refresh();
+    });
+
+    // Zoom Scroll Mode Toggle Button
+    let zoomScrollMode = false;
+document.getElementById('zoom-scroll').addEventListener('click', function() {
+  zoomScrollMode = !zoomScrollMode;
+  this.classList.toggle('active', zoomScrollMode);
+  const img = this.querySelector('img');
+  if (zoomScrollMode) {
+    // Use an active icon (hand cursor) when zoom scroll mode is enabled
+    img.src = 'https://img.icons8.com/?size=100&id=13723&format=png&color=000000';
+  } else {
+    // Use a new default icon (hand pointing) when zoom scroll mode is off
+    img.src = 'https://img.icons8.com/?size=100&id=rP2EhCKcbxP1&format=png&color=000000';
+  }
+});
+
+
+    // Add mouse wheel event listener to enable zooming with scroll when zoomScrollMode is active.
+    wrapper.addEventListener('wheel', function(e) {
+      if (!zoomScrollMode) return;
+      e.preventDefault(); // Prevent default scroll behavior
+      const oldZoom = currentZoom;
+      // Use a multiplier based on wheel delta (tweak 0.001 as needed)
+      let newZoom = oldZoom * (1 - e.deltaY * 0.001);
+      newZoom = Math.max(0.5, Math.min(newZoom, 3.0)); // Clamp zoom factor
+      const zoomChange = newZoom / oldZoom;
+      currentZoom = newZoom;
+      // Get mouse position relative to the wrapper
+      const rect = wrapper.getBoundingClientRect();
+      const mouseX = e.clientX - rect.left;
+      const mouseY = e.clientY - rect.top;
+      const scrollLeft = wrapper.scrollLeft;
+      const scrollTop = wrapper.scrollTop;
+      // Adjust scroll so that the content under the pointer stays fixed
+      wrapper.scrollLeft = ((mouseX + scrollLeft) * zoomChange) - mouseX;
+      wrapper.scrollTop = ((mouseY + scrollTop) * zoomChange) - mouseY;
+      wrapper.style.fontSize = (baseFontSize * newZoom) + "px";
+      codeEditor.refresh();
+    });
+
+    // --- End Zoom Controls ---
+
+    // Global variables for layout and Split.js instance.
+    let layoutState = 0; // 0 = bottom, 1 = left, 2 = right
+    let splitInstance = null;
+
+    // Themes array with 7 themes.
+    const themes = [
+    {
+    name: "Violet Dream",
+    runBtnBackground: "#8A2BE2",
+    runBtnHover: "#7A1DC2",
+    runBtnTextColor: "#fff",
+    topDockBackground: "#f0e6ff",
+    leftDockBackground: "rgba(240,230,255,0.8)",
+  },
+  {
+    name: "Forest Green",
+    runBtnBackground: "#228B22",
+    runBtnHover: "#1e6b1e",
+    runBtnTextColor: "#fff",
+    topDockBackground: "#e6f9e6",
+    leftDockBackground: "rgba(230,249,230,0.8)",
+  },
+  {
+    name: "Coral Reef",
+    runBtnBackground: "#FF7F50",
+    runBtnHover: "#e66a42",
+    runBtnTextColor: "#000",
+    topDockBackground: "#fff0e6",
+    leftDockBackground: "rgba(255,240,230,0.8)",
+  },
+  {
+    name: "Crimson Red",
+    runBtnBackground: "#DC143C",
+    runBtnHover: "#B01033",
+    runBtnTextColor: "#fff",
+    topDockBackground: "#ffe6e6",
+    leftDockBackground: "rgba(255,230,230,0.8)",
+  },
+  {
+    name: "Royal Gold",
+    runBtnBackground: "#FFD700",
+    runBtnHover: "#e6c200",
+    runBtnTextColor: "#000",
+    topDockBackground: "#fffbe6",
+    leftDockBackground: "rgba(255,251,230,0.8)",
+  },
+  {
+    name: "Arctic Blue",
+    runBtnBackground: "#00BFFF",
+    runBtnHover: "#009acd",
+    runBtnTextColor: "#000",
+    topDockBackground: "#e6f7ff",
+    leftDockBackground: "rgba(230,247,255,0.8)",
+  },
+ 
+  {
+    name: "Mystic Lavender",
+    runBtnBackground: "#9370DB",
+    runBtnHover: "#7d5ebb",
+    runBtnTextColor: "#fff",
+    topDockBackground: "#f4eefe",
+    leftDockBackground: "rgba(244,239,254,0.8)",
+  },
+  {
+    name: "Electric Indigo",
+    runBtnBackground: "#6F00FF",
+    runBtnHover: "#5e00cc",
+    runBtnTextColor: "#fff",
+    topDockBackground: "#ebe6ff",
+    leftDockBackground: "rgba(235,230,255,0.8)",
+  },
+  {
+    name: "Ruby Red",
+    runBtnBackground: "#AA0114",
+    runBtnHover: "#90010f",
+    runBtnTextColor: "#fff",
+    topDockBackground: "#f9e6e7",
+    leftDockBackground: "rgba(249,230,231,0.8)",
+  },
+  {
+    name: "Sapphire Blue",
+    runBtnBackground: "#0F52BA",
+    runBtnHover: "#0d47a1",
+    runBtnTextColor: "#fff",
+    topDockBackground: "#e6f0ff",
+    leftDockBackground: "rgba(230,240,255,0.8)",
+  },
+  {
+    name: "Blush Pink",
+    runBtnBackground: "#FF69B4",
+    runBtnHover: "#e65a9e",
+    runBtnTextColor: "#fff",
+    topDockBackground: "#ffe6f0",
+    leftDockBackground: "rgba(255,230,240,0.8)",
+  },
+  {
+    name: "Mint Green",
+    runBtnBackground: "#3EB489",
+    runBtnHover: "#369f78",
+    runBtnTextColor: "#000",
+    topDockBackground: "#e6f9f3",
+    leftDockBackground: "rgba(230,249,243,0.8)",
+  },
+  {
+    name: "Steel Gray",
+    runBtnBackground: "#708090",
+    runBtnHover: "#5a6b77",
+    runBtnTextColor: "#fff",
+    topDockBackground: "#e0e4e8",
+    leftDockBackground: "rgba(224,228,232,0.8)",
+  },
+  {
+    name: "Copper Brown",
+    runBtnBackground: "#B87333",
+    runBtnHover: "#a0662e",
+    runBtnTextColor: "#fff",
+    topDockBackground: "#f9eae3",
+    leftDockBackground: "rgba(249,234,227,0.8)",
+  },
+  {
+    name: "Aqua Marine",
+    runBtnBackground: "#7FFFD4",
+    runBtnHover: "#69e0bb",
+    runBtnTextColor: "#000",
+    topDockBackground: "#e0fff8",
+    leftDockBackground: "rgba(224,255,248,0.8)",
+  },
+  {
+    name: "Peachy Keen",
+    runBtnBackground: "#FFCC99",
+    runBtnHover: "#e6b882",
+    runBtnTextColor: "#000",
+    topDockBackground: "#fff4e6",
+    leftDockBackground: "rgba(255,244,230,0.8)",
+  },
+  {
+    name: "Plum Delight",
+    runBtnBackground: "#8E4585",
+    runBtnHover: "#7a3d73",
+    runBtnTextColor: "#fff",
+    topDockBackground: "#f5e6f4",
+    leftDockBackground: "rgba(245,230,244,0.8)",
+  },
+  {
+    name: "Sunrise",
+    runBtnBackground: "#FF4500",
+    runBtnHover: "#e03d00",
+    runBtnTextColor: "#000",
+    topDockBackground: "#ffece6",
+    leftDockBackground: "rgba(255,236,230,0.8)",
+  },
+  {
+    name: "Dusk",
+    runBtnBackground: "#4B0082",
+    runBtnHover: "#3a006e",
+    runBtnTextColor: "#fff",
+    topDockBackground: "#e6e0f2",
+    leftDockBackground: "rgba(230,224,242,0.8)",
+  },
+  {
+    name: "Frosty Blue",
+    runBtnBackground: "#5F9EA0",
+    runBtnHover: "#537f88",
+    runBtnTextColor: "#000",
+    topDockBackground: "#e6f2f4",
+    leftDockBackground: "rgba(230,242,244,0.8)",
+  }
+];
+
+  
+    let currentThemeIndex = 0;
+  
+    // Modified applyTheme() function
+  // Modified applyTheme() function
+function applyTheme(theme) {
+  // Update general UI elements (run button and docks)
+  runBtn.style.backgroundColor = theme.runBtnBackground;
+  runBtn.style.color = theme.runBtnTextColor; // Corrected property and value
+  topDock.style.backgroundColor = theme.topDockBackground;
+  leftDock.style.backgroundColor = theme.leftDockBackground;
+
+ // Reference to the background theme toggle button
+const bgThemeToggle = document.getElementById('bg-theme-toggle');
+
+if (document.body.classList.contains('dark-mode')) {
+  // In dark mode: force editor, terminal, and pane-terminal to use a pure black background and white text.
+  const editorContainer = document.querySelector('#editor-container');
+  if (editorContainer) {
+    editorContainer.style.backgroundColor = "#1D1D1D"; // Pure black background
+    editorContainer.style.color = "#fff";           // White text
+  }
+  const paneTerminal = document.querySelector('#pane-terminal');
+  if (paneTerminal) {
+    paneTerminal.style.backgroundColor = "#1D1D1D";
+    paneTerminal.style.color = "#fff";
+  }
+  const terminal = document.querySelector('#terminal');
+  if (terminal) {
+    terminal.style.backgroundColor = "#1D1D1D";
+    terminal.style.color = "#fff";
+  }
+  // Disable the background theme toggle in dark mode.
+  bgThemeToggle.disabled = true;
+  bgThemeToggle.style.opacity = "0";
+} else {
+  // In light mode: enable the bg theme toggle.
+  bgThemeToggle.disabled = false;
+  bgThemeToggle.style.opacity = "1";
+
+  // For the editor container, apply the last activated background theme if available.
+  const currentBgTheme = bgThemes[currentBgThemeIndex] || { background: "#fff", textColor: "#000" };
+  const editorContainer = document.querySelector('#editor-container');
+  if (editorContainer) {
+    editorContainer.style.backgroundColor = currentBgTheme.background;
+    editorContainer.style.color = currentBgTheme.textColor;
+  }
+
+  // Force the pane terminal and terminal to use a pure white background with black text.
+  const paneTerminal = document.querySelector('#pane-terminal');
+  if (paneTerminal) {
+    paneTerminal.style.backgroundColor = "#fff"; // Pure white background
+    paneTerminal.style.color = "#000";           // Black text
+  }
+  const terminal = document.querySelector('#terminal');
+  if (terminal) {
+    terminal.style.backgroundColor = "#fff";
+    terminal.style.color = "#000";
+  }
+}
+
+  
+  // Update CodeMirror gutters if needed - number line up
+  const gutters = codeEditor.getWrapperElement().querySelector('.CodeMirror-gutters');
+  if (gutters) {
+    if (document.body.classList.contains('dark-mode')) {
+      gutters.style.backgroundColor = "#2e2e2e" ;
+      gutters.style.color = 'red';
+    } else {
+      gutters.style.backgroundColor = "#fafafa";
+      gutters.style.color = 'red';
+    }
+  }
+}
+  
+    applyTheme(themes[currentThemeIndex]);
+  
+    themeToggle.addEventListener('click', () => {
+      currentThemeIndex = (currentThemeIndex + 1) % themes.length;
+      applyTheme(themes[currentThemeIndex]);
+    });
+  
+    runBtn.addEventListener('mouseenter', () => {
+      runBtn.style.backgroundColor = themes[currentThemeIndex].runBtnHover;
+    });
+    runBtn.addEventListener('mouseleave', () => {
+      runBtn.style.backgroundColor = themes[currentThemeIndex].runBtnBackground;
+    });
+    
+     
+    darkModeToggle.addEventListener('click', () => {
+  document.body.classList.toggle('dark-mode');
+  // Get the <img> element inside the button
+  const img = darkModeToggle.querySelector('img');
+  if (document.body.classList.contains('dark-mode')) {
+    // Use a colourful sun icon when dark mode is active
+    img.src = 'https://img.icons8.com/color/48/moon.png';
+    codeEditor.setOption("theme", "dracula");
+
+  } else {
+    // Use a new colourful moon icon when dark mode is off
+    img.src = 'https://img.icons8.com/color/48/sun.png';
+    codeEditor.setOption("theme", "default");
+  }
+  applyTheme(themes[currentThemeIndex]);
+  
+  
+});
+
+
+
+  
+    function setLayout(state) {
+      const container = document.getElementById('split-container');
+      const paneEditor = document.getElementById('pane-editor');
+      const paneTerminal = document.getElementById('pane-terminal');
+  
+      if (splitInstance) {
+        splitInstance.destroy();
+        splitInstance = null;
+      }
+      
+      container.innerHTML = "";
+      
+      if (state === 1) {
+        container.style.flexDirection = "row";
+        container.appendChild(paneTerminal);
+        container.appendChild(paneEditor);
+        splitInstance = Split(["#pane-terminal", "#pane-editor"], {
+          direction: 'horizontal',
+          sizes: [30, 70],
+          gutterSize: 8,
+          cursor: 'col-resize'
+        });
+      } else if (state === 2) {
+        container.style.flexDirection = "row";
+        container.appendChild(paneEditor);
+        container.appendChild(paneTerminal);
+        splitInstance = Split(["#pane-editor", "#pane-terminal"], {
+          direction: 'horizontal',
+          sizes: [70, 30],
+          gutterSize: 8,
+          cursor: 'col-resize'
+        });
+      } else {
+        container.style.flexDirection = "column";
+        container.appendChild(paneEditor);
+        container.appendChild(paneTerminal);
+        splitInstance = Split(["#pane-editor", "#pane-terminal"], {
+          direction: 'vertical',
+          sizes: [75, 25],
+          gutterSize: 8,
+          cursor: 'row-resize'
+        });
+      }
+      codeEditor.refresh();
+    }
+  
+    setLayout(layoutState);
+  
+    document.addEventListener('keydown', (e) => {
+      if (e.ctrlKey && e.key.toLowerCase() === 'm') {
+        e.preventDefault();
+        layoutState = (layoutState + 1) % 3;
+        setLayout(layoutState);
+      }
+    });
+  
+    viewModeToggle.addEventListener('click', () => {
+      layoutState = (layoutState + 1) % 3;
+      setLayout(layoutState);
+    });
+  
+    function appendToTerminal(text) {
+      terminal.innerText += text;
+      terminal.scrollTop = terminal.scrollHeight;
+    }
+  
+    function removeInlineInput() {
+      const existing = document.querySelector('.inline-input');
+      if (existing) {
+        const text = existing.innerText;
+        existing.replaceWith(document.createTextNode(text));
+      }
+    }
+  
+    function createInlinePrompt() {
+      removeInlineInput();
+      const inputSpan = document.createElement("span");
+      inputSpan.className = "inline-input";
+      inputSpan.contentEditable = true;
+      inputSpan.spellcheck = false;
+      terminal.appendChild(inputSpan);
+      inputSpan.focus();
+      document.execCommand('selectAll', false, null);
+      document.getSelection().collapseToEnd();
+  
+      inputSpan.addEventListener("keydown", function(e) {
+        if (e.key === "Enter") {
+          e.preventDefault();
+          const userInput = inputSpan.innerText;
+          terminal.innerText += "\n";
+          socket.emit('input', userInput + "\n");
+          removeInlineInput();
+        }
+      });
+    }
+  
+    runBtn.addEventListener("click", () => {
+      terminal.innerText = "";
+      socket.emit('run_code', { language: currentLanguage, code: codeEditor.getValue() });
+    });
+  
+    socket.on('output', (data) => {
+      removeInlineInput();
+      appendToTerminal(data);
+      if (data.trim().endsWith(":") || data.trim().endsWith(">")) {
+        createInlinePrompt();
+      }
+    });
+  
+    socket.on('connect', () => {
+      appendToTerminal("Connected to server...\n");
+    });
+  
+    terminal.addEventListener('click', () => {
+      const inlineInput = document.querySelector('.inline-input');
+      if (inlineInput) {
+        inlineInput.focus();
+        document.execCommand('selectAll', false, null);
+        document.getSelection().collapseToEnd();
+      }
+    });
+  
+    window.addEventListener('resize', () => {
+      codeEditor.refresh();
+    });
+    
+    const splitContainer = document.getElementById('split-container');
+    splitContainer.addEventListener('mousemove', (e) => {
+      let isNearGutter = false;
+      document.querySelectorAll('.gutter').forEach(gutter => {
+        const rect = gutter.getBoundingClientRect();
+        const threshold = 4;
+        if (
+          e.clientX >= rect.left - threshold &&
+          e.clientX <= rect.right + threshold &&
+          e.clientY >= rect.top - threshold &&
+          e.clientY <= rect.bottom + threshold
+        ) {
+          if (gutter.classList.contains('gutter-horizontal')) {
+            splitContainer.style.cursor = 'col-resize';
+          } else if (gutter.classList.contains('gutter-vertical')) {
+            splitContainer.style.cursor = 'row-resize';
+          }
+          isNearGutter = true;
+        }
+      });
+      if (!isNearGutter) {
+        splitContainer.style.cursor = 'default';
+      }
+    });
+  
+    fsToggle.addEventListener('click', () => {
+      const splitContainer = document.getElementById('split-container');
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen().then(() => {
+          fsToggle.innerHTML = '<i class="fas fa-compress"></i>';
+          topDock.style.display = 'none';
+          leftDock.style.display = 'none';
+          splitContainer.style.marginTop = "0";
+          splitContainer.style.marginLeft = "0";
+          splitContainer.style.width = "100%";
+          splitContainer.style.height = "100%";
+          codeEditor.refresh();
+        }).catch(err => {
+          console.error("Error attempting to enable full-screen mode:", err);
+        });
+      } else {
+        document.exitFullscreen().then(() => {
+          fsToggle.innerHTML = '<i class="fas fa-expand"></i>';
+          topDock.style.display = 'flex';
+          leftDock.style.display = 'flex';
+          splitContainer.style.marginTop = "50px";
+          splitContainer.style.marginLeft = "50px";
+          splitContainer.style.width = "";
+          splitContainer.style.height = "";
+          codeEditor.refresh();
+        });
+      }
+    });
+  
+    document.addEventListener('fullscreenchange', () => {
+      if (!document.fullscreenElement) {
+        fsToggle.innerHTML = '<i class="fas fa-expand"></i>';
+        topDock.style.display = 'flex';
+        leftDock.style.display = 'flex';
+        const splitContainer = document.getElementById('split-container');
+        splitContainer.style.marginTop = "50px";
+        splitContainer.style.marginLeft = "50px";
+        splitContainer.style.width = "";
+        splitContainer.style.height = "";
+        codeEditor.refresh();
+      }
+    });
+  
+
+  
+    
+  </script>
+</body>
+</html>
